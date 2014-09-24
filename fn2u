@@ -1,0 +1,50 @@
+#! /bin/bash
+function changename(){
+    path="${1%/*}"
+    complete_filename="${1##*/}"
+    if echo "$complete_filename" | grep -q 'á\|é\|í\|ó\|ú\| \|ñ\Ñ'                  #Si el archivo tiene uno de los caracteres, indicados...
+    then
+        if [ $2 == 2 ]
+        then
+            new_name=$(echo "$complete_filename" | sed -e 'y/áéíóúñÑ /aeiounN_/')   #Crea un nombre nuevo
+
+            if echo "$complete_filename" | grep -q "\."                             #si el archivo tiene un punto
+            then
+                extension=".${new_name#*.}"
+            fi
+
+            for ((k=1 ; $(find "${path}" -maxdepth 1 -name "${new_name%%.*}$add$extension" | wc -l) > 0 ; k++))
+            do
+                add="_$k"
+            done 
+            
+            mv "${1}" "$path/${new_name%%.*}$add$extension"
+           echo "${1} to $path/${new_name%%.*}$add$extension"
+
+            unset add extension
+        else         
+            #cualquier otro caso, lista los archivos (y directorios) que poseen algunos de los caracteres indicados en el readme
+            echo ${1}
+        fi
+    fi
+}
+case $# in
+0) dir=$(pwd) 
+   action=1 ;;
+1) dir="$1" 
+   action=1 ;;
+2) dir="$1" 
+   action=$2 ;; 
+esac
+
+for i in "$dir"/*
+do
+    if test -d "${i}"
+    then                                #es directorio
+        $0 "${i}" "${action}"           
+        changename "${i}" "${action}"
+
+    else                                #no es directorio
+        changename "${i}" "${action}"           
+    fi
+done
